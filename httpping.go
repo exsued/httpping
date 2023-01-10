@@ -23,7 +23,7 @@ type HttpPinger struct {
 	Dests   []string
     Interval float64 
     AlarmInterval float64
-    OnRecv func()
+    OnRecv func(int)
 	OnAlarm func()
 	Debug bool
 
@@ -71,12 +71,12 @@ func (p *HttpPinger) loop() {
 
     for err == nil {
         for _, dest := range p.Dests { 
-            _, err := httpPing(dest)         
+            status, err := httpPing(dest)
             if err == nil {
                 timer.Reset(alrmD)    
             }
             if p.OnRecv != nil {
-                p.OnRecv()
+                p.OnRecv(status)
             }
             time.Sleep(intD)  
         }
