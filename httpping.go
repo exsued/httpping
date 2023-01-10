@@ -78,11 +78,11 @@ func (p *HttpPinger) loop() {
             status, err := p.httpPing(dest)
             if err == nil {
                 timer.Reset(alrmD)    
+                if p.OnRecv != nil {
+                    p.OnRecv(status)
+                }
             }else if p.OnFailedRecv != nil {
                 p.OnFailedRecv(err)
-            }
-            if p.OnRecv != nil {
-                p.OnRecv(status)
             }
             time.Sleep(intD)  
         }
