@@ -71,6 +71,7 @@ func (p *HttpPinger) loop() {
         if p.OnAlarm != nil {
             p.OnAlarm()
         }
+        timer.Reset(alrmD)
     })
 
     for err == nil {
