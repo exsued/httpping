@@ -27,7 +27,7 @@ type HttpPinger struct {
     OnRecv func(int)
     OnFailedRecv func(error)
 	OnAlarm func()
-	Debug bool
+	isAlarmed bool
 
     ctx     *context
 	mu      sync.Mutex
@@ -43,7 +43,7 @@ func NewHttpPinger(destinations []string, interval float64, alarminterval float6
 		OnRecv:  nil,
 		OnAlarm:  nil,
         OnFailedRecv:  nil,
-		Debug:   false,
+		isAlarmed:   false,
 	}
 }
 
@@ -71,7 +71,7 @@ func (p *HttpPinger) loop() {
         if p.OnAlarm != nil {
             p.OnAlarm()
         }
-        timer.Reset(alrmD)
+        p.isAlarmed = true
     })
 
     for err == nil {
@@ -84,6 +84,10 @@ func (p *HttpPinger) loop() {
                 }
             }else if p.OnFailedRecv != nil {
                 p.OnFailedRecv(err)
+            }
+            if p.isAlarmed {
+                timer.Reset(alrmD)
+                p.isAlarmed = false
             }
             time.Sleep(intD)  
         }
