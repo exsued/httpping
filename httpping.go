@@ -23,7 +23,9 @@ type HttpPinger struct {
 	Dests   []string
     Interval float64 
     AlarmInterval float64
+    HttpGetTimeout float64
     OnRecv func(int)
+    OnFailedRecv func(error)
 	OnAlarm func()
 	Debug bool
 
@@ -32,13 +34,15 @@ type HttpPinger struct {
 	
 }
 
-func NewHttpPinger(destinations []string, interval float64, alarminterval float64) *HttpPinger {
+func NewHttpPinger(destinations []string, interval float64, alarminterval float64, httpGetTimeout float64) *HttpPinger {
 	return &HttpPinger{
 		Dests:   destinations,
         Interval: interval,
         AlarmInterval: alarminterval,
+        HttpGetTimeout: httpGetTimeout,
 		OnRecv:  nil,
 		OnAlarm:  nil,
+        OnFailedRecv:  nil,
 		Debug:   false,
 	}
 }
@@ -71,9 +75,11 @@ func (p *HttpPinger) loop() {
 
     for err == nil {
         for _, dest := range p.Dests { 
-            status, err := httpPing(dest)
+            status, err := p.httpPing(dest)
             if err == nil {
                 timer.Reset(alrmD)    
+            }else if p.OnFailedRecv != nil {
+                p.OnFailedRecv(err)
             }
             if p.OnRecv != nil {
                 p.OnRecv(status)
@@ -83,9 +89,12 @@ func (p *HttpPinger) loop() {
     }
 }
 
-func httpPing(destination string) (int, error) {
+func (p *HttpPinger) httpPing(destination string) (int, error) {
     url := "http://" + destination
-    resp, err := http.Get(url)
+    client := http.Client{
+        Timeout: time.Duration(p.HttpGetTimeout) * time.Second,
+    }
+    resp, err := client.Get(url)
     if err != nil {
        return 0, err
     }
